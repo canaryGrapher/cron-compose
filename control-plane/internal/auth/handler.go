@@ -9,17 +9,27 @@ import (
 )
 
 type handler struct {
-	log    *slog.Logger
-	store  *Store
-	secret []byte
-	ttl    time.Duration
+	log         *slog.Logger
+	store       *Store
+	secret      []byte
+	ttl         time.Duration
+	oidcEnabled bool
 }
 
-// Register attaches /auth/login, /auth/logout, /me.
-func Register(r fiber.Router, log *slog.Logger, store *Store, secret []byte) {
-	h := &handler{log: log, store: store, secret: secret, ttl: 7 * 24 * time.Hour}
+func (h *handler) config(c fiber.Ctx) error {
+	return c.JSON(fiber.Map{
+		"password_login": true,
+		"oidc_enabled":   h.oidcEnabled,
+		"oidc_start_url": "/api/v1/auth/oidc/start",
+	})
+}
+
+// Register attaches /auth/login, /auth/logout, /auth/config, /me.
+func Register(r fiber.Router, log *slog.Logger, store *Store, secret []byte, oidcEnabled bool) {
+	h := &handler{log: log, store: store, secret: secret, ttl: 7 * 24 * time.Hour, oidcEnabled: oidcEnabled}
 	r.Post("/auth/login", h.login)
 	r.Post("/auth/logout", h.logout)
+	r.Get("/auth/config", h.config)
 	r.Get("/me", h.me)
 }
 

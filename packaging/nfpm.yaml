@@ -1,0 +1,48 @@
+# nfpm config for the CronCompose agent. Used by the release workflow to build .deb
+# and .apk packages. The version and arch fields are overridden on the CLI.
+#
+#   nfpm pkg --config packaging/nfpm.yaml --packager deb --target out.deb
+#   nfpm pkg --config packaging/nfpm.yaml --packager apk --target out.apk
+
+name: croncompose-agent
+arch: ${PKG_ARCH}
+version: ${PKG_VERSION}
+section: admin
+priority: optional
+maintainer: "CronCompose Maintainers <maintainers@croncompose.example>"
+description: |
+  CronCompose per-server agent. Connects out to the control plane, holds a local
+  cron schedule that survives outages, and runs shell jobs with optional resource
+  limits.
+vendor: CronCompose
+homepage: https://github.com/croncompose/croncompose
+license: Apache-2.0
+
+contents:
+  - src: ./dist/croncompose-agent
+    dst: /usr/local/bin/croncompose-agent
+    file_info:
+      mode: 0755
+
+  - src: ./packaging/croncompose-agent.service
+    dst: /lib/systemd/system/croncompose-agent.service
+    file_info:
+      mode: 0644
+
+  - src: ./packaging/agent.env.example
+    dst: /etc/croncompose/agent.env.example
+    type: config|noreplace
+    file_info:
+      mode: 0644
+
+scripts:
+  postinstall: ./packaging/postinstall.sh
+  preremove:   ./packaging/preremove.sh
+
+overrides:
+  apk:
+    depends:
+      - openrc
+  deb:
+    depends:
+      - systemd

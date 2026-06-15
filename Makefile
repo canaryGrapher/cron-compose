@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down migrate proto control-plane agent cli web dev tidy
+.PHONY: help db-up db-down migrate migrate-tool proto control-plane agent cli web dev tidy install
 
 help:
 	@echo "Targets:"
@@ -38,6 +38,14 @@ agent:
 
 cli:
 	cd cli && go build -o bin/cc ./cmd/cc
+
+# Cross-platform migration runner used by the installer (no psql required).
+migrate-tool:
+	cd control-plane && go build -o bin/migrate ./cmd/migrate
+
+# Interactive, from-source install of the whole control plane (Linux/macOS).
+install:
+	./install/install.sh
 
 web:
 	cd web && npm install && npm run dev

@@ -31,6 +31,8 @@ type Deps struct {
 	PublicGRPCAddr   string
 	InstallScriptURL string
 	Crypto           *cryptobox.Box
+	OIDC             *auth.OIDC
+	OIDCPostPath     string // where to send the browser after a successful SSO login
 }
 
 // New builds a Fiber app with all middleware and routes attached.
@@ -46,7 +48,12 @@ func New(d Deps) *fiber.App {
 	writer := audit.NewWriter(d.Pool, d.Log)
 
 	v1 := app.Group("/api/v1")
-	auth.Register(v1, d.Log, userStore, d.SessionSecret)
+	auth.Register(v1, d.Log, userStore, d.SessionSecret, d.OIDC != nil)
+	postPath := d.OIDCPostPath
+	if postPath == "" {
+		postPath = "/"
+	}
+	auth.RegisterOIDC(v1, userStore, d.SessionSecret, d.OIDC, postPath)
 	agentenroll.Register(v1, d.Log, d.Pool, d.PKI, d.GRPCAddr)
 
 	authed := v1.Group("", auth.RequireAuth(d.SessionSecret, userStore, d.Log))

@@ -47,6 +47,18 @@ func run() error {
 
 	auth.SeedAdmin(ctx, log, auth.NewStore(pool), cfg.SeedAdminEmail, cfg.SeedAdminPassword)
 
+	oidcCfg := auth.OIDCConfig{
+		IssuerURL:    cfg.OIDCIssuerURL,
+		ClientID:     cfg.OIDCClientID,
+		ClientSecret: cfg.OIDCClientSecret,
+		RedirectURL:  cfg.OIDCRedirectURL,
+		DefaultRole:  cfg.OIDCDefaultRole,
+	}
+	oidc, err := auth.NewOIDC(ctx, oidcCfg, log)
+	if err != nil {
+		return err
+	}
+
 	box, err := cryptobox.New(cfg.SecretsMasterKey)
 	if err != nil {
 		return err
@@ -78,6 +90,8 @@ func run() error {
 		PublicGRPCAddr:   cfg.PublicGRPCAddr,
 		InstallScriptURL: cfg.InstallScriptURL,
 		Crypto:           box,
+		OIDC:             oidc,
+		OIDCPostPath:     "/",
 	})
 
 	errCh := make(chan error, 1)

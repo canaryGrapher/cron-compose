@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build agent ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            goarch: amd64
+          - arch: arm64
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+          cache: true
+          cache-dependency-path: agent/go.sum
+
+      - name: Build agent binary
+        working-directory: agent
+        env:
+          GOOS: linux
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p ../dist
+          go build -trimpath -ldflags="-s -w" -o ../dist/croncompose-agent ./cmd/agent
+
+      - name: Install nfpm
+        run: |
+          curl -sSLo /tmp/nfpm.tar.gz https://github.com/goreleaser/nfpm/releases/download/v2.40.0/nfpm_2.40.0_Linux_x86_64.tar.gz
+          mkdir -p /tmp/nfpm && tar -xzf /tmp/nfpm.tar.gz -C /tmp/nfpm
+          sudo install /tmp/nfpm/nfpm /usr/local/bin/nfpm
+          nfpm --version
+
+      - name: Build .deb and .apk
+        env:
+          PKG_VERSION: ${{ github.ref_name }}
+          PKG_ARCH: ${{ matrix.arch }}
+        run: |
+          mkdir -p artifacts
+          # nfpm reads ${VAR} placeholders directly from the env.
+          nfpm pkg --config packaging/nfpm.yaml --packager deb \
+            --target "artifacts/croncompose-agent_${PKG_VERSION}_${PKG_ARCH}.deb"
+          nfpm pkg --config packaging/nfpm.yaml --packager apk \
+            --target "artifacts/croncompose-agent_${PKG_VERSION}_${PKG_ARCH}.apk"
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum *.deb *.apk > "SHA256SUMS-${{ matrix.arch }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.arch }}
+          path: artifacts/*
+
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten
+        run: |
+          mkdir -p out
+          find artifacts -type f -exec cp {} out/ \;
+          ls -la out/
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true

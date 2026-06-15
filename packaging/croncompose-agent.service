@@ -1,0 +1,21 @@
+[Unit]
+Description=CronCompose agent
+Documentation=https://github.com/croncompose/croncompose
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=croncompose
+Group=croncompose
+EnvironmentFile=-/etc/croncompose/agent.env
+ExecStart=/usr/local/bin/croncompose-agent run
+Restart=always
+RestartSec=5s
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

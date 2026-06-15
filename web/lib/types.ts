@@ -1,0 +1,93 @@
+// Shared types mirroring the control-plane API responses. Keep these intentionally
+// small; expand as new endpoints are wired in.
+
+export type Server = {
+  id: string;
+  name: string;
+  description?: string;
+  os?: string;
+  arch?: string;
+  labels: Record<string, string>;
+  status: "pending" | "online" | "offline";
+  agent_version?: string;
+  last_seen_at?: string | null;
+  created_at: string;
+};
+
+export type ListResponse<T> = {
+  items: T[];
+  next_cursor?: string;
+};
+
+export type CreateServerResponse = {
+  server: Server;
+  enrollment: { token: string; expires_at: string };
+  install_command: string;
+};
+
+export type Job = {
+  id: string;
+  target_kind: "server" | "labels";
+  server_id?: string | null;
+  target_labels: Record<string, string>;
+  name: string;
+  description?: string;
+  interpreter: string;
+  schedule_cron: string;
+  timezone: string;
+  enabled: boolean;
+  timeout_seconds: number;
+  concurrency_policy: "skip" | "allow" | "queue";
+  catchup_policy: "once" | "all" | "skip";
+  max_retries: number;
+  working_dir?: string;
+  run_as_user?: string;
+  cpu_quota_percent: number;
+  memory_max_mb: number;
+  current_version_id: string;
+  current_version: number;
+  script_body: string;
+  env: Record<string, string>;
+  secret_refs: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type RunNowResult = {
+  runs: Array<{
+    server_id: string;
+    run_id: string;
+    status: "queued" | "agent_offline";
+  }>;
+};
+
+export type Run = {
+  id: string;
+  job_id: string;
+  job_version_id: string;
+  server_id: string;
+  trigger: "schedule" | "manual" | "api";
+  status: "pending" | "running" | "succeeded" | "failed" | "timed_out" | "canceled" | "skipped";
+  scheduled_for?: string;
+  started_at?: string;
+  finished_at?: string;
+  exit_code?: number;
+  duration_ms?: number;
+  error?: string;
+  created_at: string;
+};
+
+export type LogLine = {
+  stream: "stdout" | "stderr";
+  seq: number;
+  chunk: string;
+  ts: string;
+};
+
+export type Secret = {
+  id: string;
+  scope: "global" | "server" | "job";
+  scope_id?: string;
+  name: string;
+  created_at: string;
+};

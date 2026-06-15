@@ -1,0 +1,33 @@
+# Go
+/control-plane/bin/
+/agent/bin/
+*.exe
+*.test
+*.out
+vendor/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.env*.local
+
+# Local dev
+.env
+.env.local
+*.log
+*.db
+*.sqlite
+*.sqlite3
+data/
+tls/
+
+# Generated files in proto/ are checked in so consumers can build without protoc.
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/

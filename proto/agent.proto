@@ -1,0 +1,153 @@
+syntax = "proto3";
+
+package croncompose.agent.v1;
+
+option go_package = "github.com/croncompose/croncompose/proto/agent/v1;agentv1";
+
+import "google/protobuf/timestamp.proto";
+
+// AgentService is the contract between the per-server agent and the control plane.
+// Enroll is a one-time unary call. AgentStream is the long-lived bidi stream the agent
+// holds open after enrollment, authenticated by mTLS.
+service AgentService {
+  rpc Enroll(EnrollRequest) returns (EnrollResponse);
+  rpc AgentStream(stream AgentMessage) returns (stream ServerMessage);
+}
+
+// ---- Enrollment ----
+
+message EnrollRequest {
+  string token    = 1;  // one-time enrollment token from the UI
+  string hostname = 2;
+  string os       = 3;
+  string arch     = 4;
+  bytes  csr_pem  = 5;  // PEM-encoded certificate signing request from the agent
+  string agent_version = 6;
+}
+
+message EnrollResponse {
+  string server_id        = 1;
+  bytes  client_cert_pem  = 2; // signed client certificate (production path)
+  bytes  server_ca_pem    = 3; // CA cert the agent should pin (production path)
+  string control_plane_grpc_addr = 4;
+  // MVP simplification: bearer token the agent presents as the "x-agent-token"
+  // metadata header on AgentStream. Production swaps this for mTLS using the cert/ca
+  // fields above. See docs/security.md.
+  string agent_token      = 5;
+}
+
+// ---- Stream envelopes ----
+
+message AgentMessage {
+  oneof body {
+    Hello       hello        = 1;
+    Heartbeat   heartbeat    = 2;
+    ConfigAck   config_ack   = 3;
+    RunStarted  run_started  = 4;
+    LogChunk    log_chunk    = 5;
+    RunFinished run_finished = 6;
+  }
+}
+
+message ServerMessage {
+  oneof body {
+    SyncJobs    sync_jobs    = 1;
+    RunNow      run_now      = 2;
+    CancelRun   cancel_run   = 3;
+    UpdateAgent update_agent = 4;
+  }
+}
+
+// ---- Agent -> control plane ----
+
+message Hello {
+  string agent_version = 1;
+  string os            = 2;
+  string arch          = 3;
+  string sync_cursor   = 4; // last applied SyncJobs cursor, may be empty on first connect
+  repeated string capabilities = 5;
+}
+
+message Heartbeat {
+  google.protobuf.Timestamp ts = 1;
+  repeated string running_run_ids = 2;
+  double load_avg_1m = 3;
+}
+
+message ConfigAck {
+  string applied_cursor = 1;
+  repeated string job_version_ids = 2;
+}
+
+message RunStarted {
+  string run_id         = 1;
+  string job_id         = 2;
+  string job_version_id = 3;
+  string trigger        = 4; // schedule | manual | api
+  google.protobuf.Timestamp started_at = 5;
+}
+
+message LogChunk {
+  string run_id = 1;
+  string stream = 2; // stdout | stderr
+  int32  seq    = 3;
+  bytes  data   = 4;
+}
+
+message RunFinished {
+  string run_id      = 1;
+  string status      = 2; // succeeded | failed | timed_out | canceled
+  int32  exit_code   = 3;
+  google.protobuf.Timestamp finished_at = 4;
+  int32  duration_ms = 5;
+  string error       = 6;
+}
+
+// ---- Control plane -> agent ----
+
+message JobDef {
+  string id                 = 1;
+  string version_id         = 2;
+  int32  version_number     = 3;
+  string name               = 4;
+  string interpreter        = 5;
+  string script_body        = 6;
+  string schedule_cron      = 7;
+  string timezone           = 8;
+  bool   enabled            = 9;
+  int32  timeout_seconds    = 10;
+  string concurrency_policy = 11;
+  string catchup_policy     = 12;
+  int32  max_retries        = 13;
+  string working_dir        = 14;
+  string run_as_user        = 15;
+  map<string, string> env       = 16; // non-secret env
+  map<string, string> secrets   = 17; // resolved secret values, by env var name
+
+  // Resource limits, enforced by the agent via systemd-run when available.
+  // 0 means unlimited.
+  int32 cpu_quota_percent = 18; // 100 = one full core, 200 = two cores, etc.
+  int32 memory_max_mb     = 19;
+}
+
+message SyncJobs {
+  string cursor = 1;             // monotonically increasing config version
+  repeated JobDef upsert = 2;
+  repeated string delete = 3;    // job ids to remove
+  bool full_snapshot = 4;        // true when this is the full set, not a delta
+}
+
+message RunNow {
+  string job_id         = 1;
+  string job_version_id = 2;
+  string run_id         = 3; // server-assigned for manual triggers
+}
+
+message CancelRun {
+  string run_id = 1;
+}
+
+message UpdateAgent {
+  string target_version = 1;
+  string download_url   = 2;
+}

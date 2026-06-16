@@ -66,7 +66,7 @@ do_start(){
       echo "  started web (pid $(cat "$web_pf"))"
       wait_listen "$WEB_PORT" && echo "  web listening on :$WEB_PORT" || echo "  ! web did not bind :$WEB_PORT (see $LOGS/web.log)"
     else
-      echo "  ! web build missing ($std/server.js) — re-run the installer with web enabled"
+      echo "  ! web build missing ($std/server.js); re-run the installer with web enabled"
     fi
   fi
   if [ "${CC_ENABLE_AGENT:-0}" = "1" ] && [ -f "$RUNTIME_DIR/agent/identity.json" ]; then
@@ -154,7 +154,7 @@ print_summary() {
   info ""
   info "Sign in with:  $ADMIN_EMAIL"
   if [ "${ADMIN_PASSWORD_GENERATED:-0}" = "1" ]; then
-    info "Password:      $ADMIN_PASSWORD   (generated — save it now)"
+    info "Password:      $ADMIN_PASSWORD   (generated; save it now)"
   else
     info "Password:      (the one you entered)"
   fi

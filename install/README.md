@@ -5,7 +5,7 @@ plane** (PostgreSQL + the Go API + the Next.js web UI) on one machine, and on
 Linux/macOS optionally enroll a local **agent** so the box is also a job runner.
 
 - **Linux / macOS:** `install/install.sh`
-- **Windows:** `install/install.ps1` (control plane only — see [Agent](#agent))
+- **Windows:** `install/install.ps1` (control plane only: see [Agent](#agent))
 
 The installer asks for the ports to use (suggesting a free one for each), collects the
 required environment variables, generates the secrets for you, builds everything,
@@ -15,11 +15,12 @@ creates the database schema, starts the services, and prints how to sign in.
 
 You need a working toolchain because this builds from source:
 
-- **Go 1.25+** — builds the API, the migration tool, the agent, and the `cc` CLI.
-- **Node 20+** and **npm** — builds and runs the web UI.
-- **PostgreSQL** — either an existing server you have a connection string for, a local
-  server the installer can create a database in with `psql`, or Docker (the installer
-  can run Postgres in a container for you).
+- **Go 1.25+**: builds the API, the migration tool, the agent, and the `cc` CLI.
+- **Node 20+** and **npm**: builds and runs the web UI.
+- **PostgreSQL**: optional to install yourself. The installer can **install and configure
+  it for you** via your OS package manager (apt, dnf/yum, pacman, apk, zypper, or
+  Homebrew), or you can point it at an existing server, a `psql`-reachable local server,
+  or Docker.
 
 The installer checks all of this up front and stops with a clear message if something
 is missing.
@@ -44,29 +45,37 @@ Answer the prompts and you'll end up with the UI on the port you chose.
 
 ## What it asks you
 
-1. **Runtime directory** — where logs, pids, TLS material, and agent data live
+1. **Runtime directory**: where logs, pids, TLS material, and agent data live
    (default `./.run`).
-2. **Advertise host** — the hostname or IP that browsers and agents use to reach this
+2. **Advertise host**: the hostname or IP that browsers and agents use to reach this
    box (default `localhost`).
-3. **Ports** — web UI (3000), REST API (8080), and agent gRPC (9090). For each, the
+3. **Ports**: web UI (3000), REST API (8080), and agent gRPC (9090). For each, the
    installer probes for a free port and offers it; press Enter to accept or type your
    own. Occupied ports are flagged before you commit.
-4. **Admin account** — the email and password you'll sign in with. Leave the password
+4. **Admin account**: the email and password you'll sign in with. Leave the password
    blank and one is generated and shown to you.
-5. **Database** — pick existing / psql / Docker (see [Database options](#database-options)).
-6. **OIDC SSO** — optional; if you opt in it collects the four `OIDC_*` values.
-7. **Extra variables** — optionally add any other `KEY=VALUE` pairs to append to `.env`.
+5. **Database**: pick existing / psql / Docker (see [Database options](#database-options)).
+6. **OIDC SSO**: optional; if you opt in it collects the four `OIDC_*` values.
+7. **Extra variables**: optionally add any other `KEY=VALUE` pairs to append to `.env`.
 
 `SESSION_SECRET` and `SECRETS_MASTER_KEY` are always generated for you with a CSPRNG.
 Everything is written to a `.env` file (mode `600`) at the repo root.
 
 ## Database options
 
-- **Existing** — you paste a `DATABASE_URL`. Nothing is created; the schema is applied
+- **Install it for me** (offered if a package manager is found; the default): the
+  installer installs the PostgreSQL server with your OS package manager, starts and
+  enables the service (running `initdb` where the package manager doesn't), then creates
+  the role and database. You just choose the database name, role, and password (a
+  password is generated if you leave it blank). Needs `sudo` on Linux. Idempotent: it
+  skips the install if a server is already present. Supported managers: `apt`, `dnf`,
+  `yum`, `pacman`, `apk`, `zypper`, and Homebrew (`brew`). Preview the exact commands
+  without running them by setting `CC_DB_DRY_RUN=1`.
+- **Existing**: you paste a `DATABASE_URL`. Nothing is created; the schema is applied
   to whatever you point at.
-- **psql** (offered if `psql` is on PATH) — you give a superuser connection and the
-  installer creates the role and database, then applies the schema.
-- **Docker** (offered if `docker` is on PATH) — the installer runs Postgres from
+- **psql** (offered if `psql` is on PATH): you give a superuser connection and the
+  installer creates the role and database in an already-running server.
+- **Docker** (offered if `docker` is on PATH): the installer runs Postgres from
   `docker-compose.yml`, waits for it to be ready, and uses it.
 
 Migrations are applied by a small bundled tool (`control-plane/cmd/migrate`) that talks
@@ -114,14 +123,15 @@ prompting. Values come from `CC_*` environment variables:
 | `CC_GRPC_PORT`       | agent gRPC port                                    | first free at/after `9090`       |
 | `CC_ADMIN_EMAIL`     | seed admin email                                   | `admin@example.com`              |
 | `CC_ADMIN_PASSWORD`  | seed admin password                                | generated if empty               |
-| `CC_DB_METHOD`       | `existing` \| `psql` \| `docker`                   | `existing`                       |
+| `CC_DB_METHOD`       | `native` \| `existing` \| `psql` \| `docker`        | `native` if a package manager is found, else `existing` |
 | `CC_DATABASE_URL`    | DSN (for `existing`)                               | local dev DSN                    |
+| `CC_DB_NAME` / `CC_DB_USER` / `CC_DB_PASS` | database, role, password (for `native`/`psql`) | `croncompose` / `croncompose` / generated |
 | `CC_LOG_LEVEL`       | `debug` \| `info` \| `warn` \| `error`             | `info`                           |
 
 Other flags: `--no-web` / `-NoWeb` (API-only), `--no-agent` (Linux/macOS, control plane
 only), `--runtime-dir DIR` / `-RuntimeDir DIR`.
 
-Example — a headless, scripted install against an existing database:
+Example: a headless, scripted install against an existing database:
 
 ```sh
 CC_DB_METHOD=existing \
@@ -133,10 +143,10 @@ CC_WEB_PORT=3000 CC_API_PORT=8080 CC_GRPC_PORT=9090 \
 
 ## Generated files
 
-- `.env` — config and secrets (mode `600`, git-ignored). Source of truth for the stack.
-- `croncompose-ctl.sh` / `croncompose-ctl.ps1` — process manager (git-ignored).
-- `.run/` — logs, pids, TLS material, and agent data (git-ignored).
-- `control-plane/bin/`, `cli/bin/`, `agent/bin/` — compiled binaries (git-ignored).
+- `.env`: config and secrets (mode `600`, git-ignored). Source of truth for the stack.
+- `croncompose-ctl.sh` / `croncompose-ctl.ps1`: process manager (git-ignored).
+- `.run/`: logs, pids, TLS material, and agent data (git-ignored).
+- `control-plane/bin/`, `cli/bin/`, `agent/bin/`: compiled binaries (git-ignored).
 
 ## Production notes
 
@@ -148,9 +158,9 @@ container-based alternative.
 
 ## Troubleshooting
 
-- **"Go/Node is required"** — install the toolchain and re-run; the installer prints the
+- **"Go/Node is required"**: install the toolchain and re-run; the installer prints the
   download links.
-- **Web didn't bind its port** — check `./croncompose-ctl.sh logs web`. The UI is built
+- **Web didn't bind its port**: check `./croncompose-ctl.sh logs web`. The UI is built
   with `output: "standalone"` and runs as `node .next/standalone/server.js`.
-- **Migrations failed** — verify the `DATABASE_URL` is reachable and the role can create
+- **Migrations failed**: verify the `DATABASE_URL` is reachable and the role can create
   tables. The migration tool retries the connection briefly on startup.

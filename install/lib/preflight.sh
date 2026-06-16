@@ -48,7 +48,22 @@ detect_db_tools() {
   command -v psql >/dev/null 2>&1 && { HAVE_PSQL=1; ok "psql detected (enables auto-creating a local database)"; }
   command -v pg_isready >/dev/null 2>&1 && HAVE_PG_ISREADY=1
   if command -v docker >/dev/null 2>&1; then HAVE_DOCKER=1; ok "docker detected (enables a containerized Postgres)"; fi
-  [ "$HAVE_PSQL" = "0" ] && [ "$HAVE_DOCKER" = "0" ] && dim "no psql or docker found — you'll supply a Postgres connection string"
+  detect_pkg_manager
+}
+
+# Find a package manager we can install PostgreSQL with. Sets PKG_MGR + HAVE_PKG.
+detect_pkg_manager() {
+  PKG_MGR=""; HAVE_PKG=0
+  if [ "$PLATFORM" = "macos" ]; then
+    command -v brew >/dev/null 2>&1 && PKG_MGR="brew"
+  else
+    for m in apt-get dnf yum pacman apk zypper; do
+      if command -v "$m" >/dev/null 2>&1; then PKG_MGR="$m"; break; fi
+    done
+  fi
+  if [ -n "$PKG_MGR" ]; then HAVE_PKG=1; ok "$PKG_MGR detected (the installer can install + configure PostgreSQL for you)"; fi
+  [ "$HAVE_PSQL" = "0" ] && [ "$HAVE_DOCKER" = "0" ] && [ "$HAVE_PKG" = "0" ] && \
+    dim "no package manager, psql, or docker found: you'll supply a Postgres connection string"
 }
 
 run_preflight() {

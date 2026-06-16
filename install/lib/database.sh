@@ -191,9 +191,10 @@ apply_migrations() {
   step "Applying database migrations"
   local migrate_bin="$REPO_ROOT/control-plane/bin/migrate"
   [ -x "$migrate_bin" ] || die "migrate tool not built (expected $migrate_bin)"
-  DATABASE_URL="$DATABASE_URL" "$migrate_bin" -dir "$REPO_ROOT/migrations" 2>&1 | while IFS= read -r l; do info "$l"; done
-  # Propagate the migrate tool's exit status, not the while loop's.
-  local rc="${PIPESTATUS[0]}"
-  [ "$rc" = "0" ] || die "migrations failed (exit $rc)"
+  # Run directly (no pipe) so a failure is caught by the if instead of aborting under
+  # `set -o pipefail`. The tool prints its own indented apply/skip lines.
+  if ! DATABASE_URL="$DATABASE_URL" "$migrate_bin" -dir "$REPO_ROOT/migrations"; then
+    die "migrations failed (is DATABASE_URL reachable and can the role create tables?)"
+  fi
   ok "schema is up to date"
 }

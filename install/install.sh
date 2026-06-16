@@ -68,6 +68,7 @@ ART
   dim "Builds and runs the CronCompose control plane from source."
   [ "$ENABLE_AGENT" = "1" ] && dim "Scope: control plane + a local agent on this machine."
   [ "$NONINTERACTIVE" = "1" ] && dim "Mode: non-interactive (using defaults / CC_* env)."
+  return 0  # never let a false test above abort the script under `set -e`
 }
 
 main() {

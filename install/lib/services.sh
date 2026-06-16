@@ -114,7 +114,7 @@ enroll_local_agent() {
   local cookie="$RUNTIME_DIR/run/cc-cookies.txt"
   local hostname_label; hostname_label="local-$(hostname 2>/dev/null || echo host)"
 
-  if [ -f "$RUNTIME_DIR/agent/identity.json" ]; then ok "agent already enrolled"; "$CTL" start >/dev/null 2>&1; return 0; fi
+  if [ -f "$RUNTIME_DIR/agent/identity.json" ]; then ok "agent already enrolled"; "$CTL" start >/dev/null 2>&1 || true; return 0; fi
 
   curl -fsS -c "$cookie" -X POST "$api/auth/login" -H 'content-type: application/json' \
     -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}" >/dev/null 2>&1 \
@@ -122,7 +122,7 @@ enroll_local_agent() {
 
   local resp token
   resp="$(curl -fsS -b "$cookie" -X POST "$api/servers" -H 'content-type: application/json' \
-    -d "{\"name\":\"$hostname_label\",\"description\":\"local agent (installer)\"}" 2>/dev/null)"
+    -d "{\"name\":\"$hostname_label\",\"description\":\"local agent (installer)\"}" 2>/dev/null || true)"
   token="$(json_string "$resp" token)"
   [ -n "$token" ] || { warn "no enrollment token returned; skipping agent."; return 0; }
 
@@ -133,7 +133,7 @@ enroll_local_agent() {
     "$REPO_ROOT/agent/bin/agent" enroll --token="$token" >/dev/null 2>&1 \
     && ok "agent enrolled" || { warn "agent enrollment failed; the stack is up without a local agent."; return 0; }
 
-  "$CTL" start >/dev/null 2>&1
+  "$CTL" start >/dev/null 2>&1 || true
   # Best-effort online confirmation.
   local i=0
   while [ "$i" -lt 15 ]; do

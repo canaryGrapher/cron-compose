@@ -62,8 +62,10 @@ detect_pkg_manager() {
     done
   fi
   if [ -n "$PKG_MGR" ]; then HAVE_PKG=1; ok "$PKG_MGR detected (the installer can install + configure PostgreSQL for you)"; fi
-  [ "$HAVE_PSQL" = "0" ] && [ "$HAVE_DOCKER" = "0" ] && [ "$HAVE_PKG" = "0" ] && \
+  if [ "$HAVE_PSQL" = "0" ] && [ "$HAVE_DOCKER" = "0" ] && [ "$HAVE_PKG" = "0" ]; then
     dim "no package manager, psql, or docker found: you'll supply a Postgres connection string"
+  fi
+  return 0  # trailing tests must not set a non-zero status under `set -e`
 }
 
 run_preflight() {

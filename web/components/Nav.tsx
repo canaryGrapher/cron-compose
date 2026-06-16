@@ -11,23 +11,26 @@ export async function Nav() {
   } catch {
     me = null;
   }
+  const isAdmin = me?.role === "admin" || me?.role === "owner";
+
   return (
-    <div className="row" style={{ marginBottom: 24 }}>
-      <Link href="/" style={{ fontWeight: 600, color: "var(--text)" }}>
+    <div className="topbar">
+      <Link href="/" className="brand">
+        <span className="mark">C</span>
         CronCompose
       </Link>
-      <nav style={{ display: "flex", gap: 16, alignItems: "center" }}>
+      <nav>
         {me ? (
           <>
             <Link href="/">Servers</Link>
-            {(me.role === "admin" || me.role === "owner") && (
+            {isAdmin && (
               <>
                 <Link href="/secrets">Secrets</Link>
                 <Link href="/audit">Audit</Link>
               </>
             )}
-            <span className="subtle" style={{ fontSize: 12 }}>
-              {me.email} ({me.role})
+            <span className="pill" style={{ marginLeft: 4 }}>
+              {me.email} · {me.role}
             </span>
             <LogoutButton />
           </>

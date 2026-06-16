@@ -7,8 +7,9 @@ const PUBLIC_PATHS = ["/login"];
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Always allow next-internal, static assets, and the API proxy routes (the proxy
-  // handles forwarding; the underlying control plane decides).
+  // Always allow next-internal, static assets, and /api. /api is proxied to the
+  // control plane by a Next rewrite (dev/standalone) or the Go proxy (prod); the
+  // control plane enforces auth there.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||

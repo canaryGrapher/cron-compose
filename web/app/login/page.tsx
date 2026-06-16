@@ -39,7 +39,7 @@ function LoginForm() {
       });
       if (!res.ok) {
         if (res.status === 401) throw new Error("Wrong email or password");
-        throw new Error(`HTTP ${res.status}`);
+        throw new Error(`Sign-in failed (HTTP ${res.status})`);
       }
       router.push(next);
       router.refresh();
@@ -60,52 +60,58 @@ function LoginForm() {
   }
 
   return (
-    <>
-      <h1>Sign in</h1>
-      <p className="subtle">CronCompose control plane.</p>
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <div className="brand" style={{ fontSize: 18 }}>
+          <span className="mark">C</span>
+          CronCompose
+        </div>
+        <h1 style={{ marginTop: 18 }}>Sign in</h1>
+        <p className="subtle" style={{ margin: "0 0 4px" }}>
+          Welcome back to your control plane.
+        </p>
 
-      {authCfg?.oidc_enabled && (
-        <div className="stack" style={{ marginTop: 16, maxWidth: 360 }}>
-          <button className="button" onClick={startSSO} type="button">
-            Sign in with SSO
-          </button>
-          <div className="subtle" style={{ textAlign: "center", fontSize: 12, margin: "8px 0" }}>
-            or with email + password
+        {authCfg?.oidc_enabled && (
+          <div className="stack" style={{ marginTop: 20 }}>
+            <button className="button block secondary" onClick={startSSO} type="button">
+              Sign in with SSO
+            </button>
+            <div className="divider">or with email</div>
           </div>
-        </div>
-      )}
+        )}
 
-      <form onSubmit={submit} className="stack" style={{ marginTop: 16, maxWidth: 360 }}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
-        <div>
-          <button type="submit" className="button" disabled={busy || !email || !password}>
-            {busy ? "Signing in..." : "Sign in"}
+        <form onSubmit={submit} className="stack" style={{ marginTop: 16 }}>
+          <div>
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="button block" disabled={busy || !email || !password}>
+            {busy ? "Signing in…" : "Sign in"}
           </button>
-        </div>
-      </form>
-    </>
+        </form>
+      </div>
+    </div>
   );
 }
 

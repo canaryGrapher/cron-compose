@@ -29,7 +29,7 @@ export SEED_ADMIN_PASSWORD="change-me"
 # control plane: REST on :8080, mTLS gRPC on :9090
 make control-plane && ./control-plane/bin/control-plane
 
-# web UI on :3000 (in another shell)
+# web UI on :3000 under /app (in another shell)
 make web
 
 # agent (in another shell, on the target server)
@@ -40,8 +40,10 @@ make agent
 
 End-to-end flow:
 
-1. Open <http://localhost:3000>. You'll be bounced to `/login` (the middleware sees no
-   session). Sign in with the seeded admin.
+1. Open <http://localhost:3000/app>. The UI lives under `/app` (Next.js `basePath`); bare
+   `/` is only redirected there by the Go proxy in prod, so in `next dev` go to `/app`
+   directly. You'll be bounced to `/app/login` (the middleware sees no session). Sign in
+   with the seeded admin.
 2. **Add server**, copy the install command (with a one-time token).
 3. On the target: `agent enroll --token=...` generates an ed25519 keypair + CSR, POSTs
    it to the control plane's REST enroll endpoint, receives a signed client cert + the
@@ -158,12 +160,12 @@ Agent:
 │       └── runtime/         <- top-level loop: sync, fire, push events
 └── web/                     <- Next.js 16 App Router
     ├── app/
-    │   ├── api/             <- thin proxies (cookie-forwarding)
     │   ├── login/           <- /login form
     │   ├── servers/[id]/    <- server detail + new job
     │   ├── jobs/[id]/       <- job detail + Run now
     │   └── runs/[id]/       <- run detail with SSE
     ├── components/          <- Nav, ServerCard, JobRow, RunRow, LogoutButton
-    ├── lib/                 <- api client (forwards session cookie), proxy, types
-    └── middleware.ts        <- redirect unauthenticated users to /login
+    ├── lib/                 <- api client (forwards session cookie), types
+    ├── next.config.ts       <- standalone build + basePath /app + /api -> control plane rewrite
+    └── middleware.ts        <- redirect unauthenticated users to /login (paths are basePath-relative)
 ```

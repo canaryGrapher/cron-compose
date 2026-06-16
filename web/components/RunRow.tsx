@@ -1,9 +1,10 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { Run } from "@/lib/types";
 
 const statusColor: Record<Run["status"], string> = {
   pending: "var(--muted)",
-  running: "var(--accent)",
+  running: "var(--info)",
   succeeded: "var(--ok)",
   failed: "var(--danger)",
   timed_out: "var(--danger)",
@@ -26,20 +27,13 @@ export function RunRow({ run }: { run: Run }) {
           <div style={{ fontSize: 12 }} className="subtle">
             {new Date(run.created_at).toLocaleString()}
           </div>
-          <div style={{ fontSize: 12 }}>
+          <div style={{ fontSize: 12, marginTop: 2 }}>
             trigger: {run.trigger}
             {run.duration_ms !== undefined && <> · {fmtDuration(run.duration_ms)}</>}
             {run.exit_code !== undefined && <> · exit {run.exit_code}</>}
           </div>
         </div>
-        <span
-          style={{
-            color: statusColor[run.status],
-            fontSize: 12,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-          }}
-        >
+        <span className="status" style={{ "--status-color": statusColor[run.status] } as CSSProperties}>
           {run.status}
         </span>
       </div>

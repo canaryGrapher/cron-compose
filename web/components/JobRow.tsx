@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { Job } from "@/lib/types";
 
 function targetSummary(job: Job): string {
@@ -20,19 +21,15 @@ export function JobRow({ job }: { job: Job }) {
     >
       <div className="row">
         <div>
-          <div style={{ fontWeight: 600 }}>{job.name}</div>
-          <div className="subtle" style={{ fontSize: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{job.name}</div>
+          <div className="subtle" style={{ fontSize: 12, marginTop: 2 }}>
             <code>{job.schedule_cron}</code> ({job.timezone}) · {job.interpreter} · v
             {job.current_version} · {targetSummary(job)}
           </div>
         </div>
         <span
-          style={{
-            fontSize: 12,
-            color: job.enabled ? "var(--ok)" : "var(--muted)",
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-          }}
+          className="status"
+          style={{ "--status-color": job.enabled ? "var(--ok)" : "var(--muted)" } as CSSProperties}
         >
           {job.enabled ? "enabled" : "disabled"}
         </span>

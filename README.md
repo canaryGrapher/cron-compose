@@ -20,6 +20,15 @@ scheduler. If the control plane goes down or the network drops, jobs keep firing
 server and results sync back when the connection returns. The control plane is the
 source of truth for *definitions*, not a runtime dependency for *execution*.
 
+## Single entry point
+
+The web UI, the REST API, and the agent gRPC channel all sit behind one URL via a
+small in-repo Go reverse proxy ([proxy/](proxy/)). It path-routes `/api/*` to the
+control plane and everything else to the web UI, and passes agent mTLS gRPC straight
+through (never decrypted). Point a single domain at the proxy; nothing else is exposed.
+See [proxy/README.md](proxy/README.md). In production it is the only published service
+in [docker-compose.prod.yml](docker-compose.prod.yml).
+
 ## Documentation
 
 This repo currently holds the design spec. Read in this order:

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import type { Server } from "@/lib/types";
 
 const statusColor: Record<Server["status"], string> = {
@@ -16,24 +17,17 @@ export function ServerCard({ server }: { server: Server }) {
     >
       <div className="row">
         <div>
-          <div style={{ fontWeight: 600 }}>{server.name}</div>
-          <div className="subtle" style={{ fontSize: 12 }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{server.name}</div>
+          <div className="subtle" style={{ fontSize: 12, marginTop: 2 }}>
             {server.os || "unknown"} / {server.arch || "unknown"}
           </div>
         </div>
-        <span
-          style={{
-            color: statusColor[server.status],
-            fontSize: 12,
-            textTransform: "uppercase",
-            letterSpacing: 0.5,
-          }}
-        >
+        <span className="status" style={{ "--status-color": statusColor[server.status] } as CSSProperties}>
           {server.status}
         </span>
       </div>
       {server.description && (
-        <p className="subtle" style={{ marginTop: 8 }}>
+        <p className="subtle" style={{ marginTop: 10 }}>
           {server.description}
         </p>
       )}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { RunNowResult } from "@/lib/types";
 
 export function RunNowButton({ jobId }: { jobId: string }) {
@@ -46,7 +47,7 @@ export function RunNowButton({ jobId }: { jobId: string }) {
           <ul style={{ margin: "4px 0 0 16px" }}>
             {last.map((r) => (
               <li key={r.run_id}>
-                <a href={`/runs/${r.run_id}`}>{r.run_id.slice(0, 8)}</a>{" "}
+                <Link href={`/runs/${r.run_id}`}>{r.run_id.slice(0, 8)}</Link>{" "}
                 ({r.server_id.slice(0, 8)}) — {r.status}
               </li>
             ))}

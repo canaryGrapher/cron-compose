@@ -10,7 +10,11 @@ export function LogoutButton() {
     router.refresh();
   }
   return (
-    <button onClick={logout} className="button secondary" style={{ fontSize: 12 }}>
+    <button
+      onClick={logout}
+      className="button secondary"
+      style={{ fontSize: 12, padding: "7px 14px" }}
+    >
       Sign out
     </button>
   );

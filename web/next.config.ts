@@ -1,11 +1,32 @@
 import type { NextConfig } from "next";
 
+// The server-side API base (control plane), baked at build time. Override via
+// API_BASE in the environment before `next build`.
+const apiBase = process.env.API_BASE ?? "http://localhost:8080/api/v1";
+
 const config: NextConfig = {
   // Standalone output for tiny production Docker images.
   output: "standalone",
-  // The server-side API base. Override via API_BASE in the environment.
-  env: {
-    API_BASE: process.env.API_BASE ?? "http://localhost:8080/api/v1",
+
+  // The whole UI lives under /app, so the single entry point can give /api to
+  // the Go control plane and /app to this app. next/link, next/router and
+  // redirect() pick this prefix up automatically; raw fetch() does not (see the
+  // rewrite below), and next/image src would need it added by hand (none used).
+  basePath: "/app",
+
+  env: { API_BASE: apiBase },
+
+  // Browser calls to /api/* are proxied to the control plane, mapping the public
+  // /api prefix onto the control plane's /api/v1. In production the in-repo Go
+  // proxy fronts /api before it ever reaches Next; this rewrite is the
+  // standalone/dev path that keeps the UI self-contained (e.g. `next dev`).
+  // basePath: false keeps the source at the real root (/api/*, not /app/api/*)
+  // so the client's fetch("/api/..") still matches; allowed here because the
+  // destination is an absolute (external) URL.
+  async rewrites() {
+    return [
+      { source: "/api/:path*", destination: `${apiBase}/:path*`, basePath: false },
+    ];
   },
 };
 

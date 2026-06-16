@@ -103,6 +103,9 @@ End-to-end flow:
 | `SESSION_SECRET`          | dev placeholder                              | **must be set** in prod, min 16 chars |
 | `SEED_ADMIN_EMAIL`        | unset                                        | upserts on every boot                |
 | `SEED_ADMIN_PASSWORD`     | unset                                        | upserts on every boot                |
+| `PUBLIC_BASE_URL`         | unset                                        | single source of truth for the external address. When set (e.g. `https://cron.example.com`), derives `PUBLIC_HTTP_URL`, `PUBLIC_GRPC_ADDR` (host + gRPC port), the OIDC redirect, and adds its host to `TLS_HOSTS`. |
+| `PUBLIC_HTTP_URL`         | `http://localhost:8080/api/v1`               | derived from `PUBLIC_BASE_URL`; set explicitly to override |
+| `PUBLIC_GRPC_ADDR`        | `localhost:9090`                             | derived from `PUBLIC_BASE_URL`; set explicitly to override |
 | `LOG_LEVEL`               | `info`                                       | `debug`/`info`/`warn`/`error`        |
 
 Agent:

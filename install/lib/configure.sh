@@ -130,8 +130,7 @@ write_env_file() {
   step "Writing configuration"
   ENV_FILE="$REPO_ROOT/.env"
   API_BASE="http://127.0.0.1:$API_PORT/api/v1"
-  PUBLIC_HTTP_URL="http://$ADVERTISE_HOST:$API_PORT/api/v1"
-  PUBLIC_GRPC_ADDR="$ADVERTISE_HOST:$GRPC_PORT"
+  PUBLIC_BASE_URL="${CC_PUBLIC_BASE_URL:-http://$ADVERTISE_HOST:$API_PORT}"
 
   umask 077
   {
@@ -147,8 +146,10 @@ write_env_file() {
     echo "SECRETS_MASTER_KEY=$SECRETS_MASTER_KEY"
     echo "SEED_ADMIN_EMAIL=$ADMIN_EMAIL"
     echo "SEED_ADMIN_PASSWORD=$ADMIN_PASSWORD"
-    echo "PUBLIC_HTTP_URL=$PUBLIC_HTTP_URL"
-    echo "PUBLIC_GRPC_ADDR=$PUBLIC_GRPC_ADDR"
+    echo "# Single point of change for the externally-reachable address. Edit this one"
+    echo "# line (e.g. https://cron.example.com) and restart; it derives the public REST"
+    echo "# URL, the agent gRPC address, the OIDC redirect, and the TLS SAN."
+    echo "PUBLIC_BASE_URL=$PUBLIC_BASE_URL"
     echo "# web UI"
     echo "PORT=$WEB_PORT"
     echo "API_BASE=$API_BASE"

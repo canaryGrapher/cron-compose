@@ -100,6 +100,28 @@ On Windows the equivalent is `./croncompose-ctl.ps1 <action>`.
 Services run as background processes. To survive reboots, wrap the control script in a
 `systemd` service (Linux), a `launchd` agent (macOS), or a scheduled task (Windows).
 
+## Changing the external address (single point of change)
+
+You can browse the UI on any hostname that reaches the box (`localhost`,
+`raspberrypi.local`, your domain) with no config changes, because the browser only talks
+to the web server, which calls the API internally over `127.0.0.1`.
+
+The address only matters where the control plane advertises *itself* (the agent install
+command, the gRPC address agents dial, the OIDC redirect, the TLS SAN). All of that is
+driven by one line in `.env`:
+
+```
+PUBLIC_BASE_URL=http://raspberrypi.local:8080
+```
+
+Change it once (for example to `https://cron.example.com`) and restart
+(`./croncompose-ctl.sh restart`). The control plane re-derives the public REST URL, the
+agent gRPC address (that host plus the gRPC port), the OIDC redirect, and adds the host
+to the TLS SANs. Advanced setups can still pin `PUBLIC_GRPC_ADDR` or `PUBLIC_HTTP_URL`
+explicitly to override the derived value. If you move agents to a brand-new hostname over
+mTLS, regenerate the server cert so the SAN covers it (delete `<runtime>/tls` and
+restart), or list every hostname in `TLS_HOSTS` up front.
+
 ## Agent
 
 The per-server agent runs scheduled jobs through a Unix shell and uses Unix process
@@ -117,7 +139,8 @@ prompting. Values come from `CC_*` environment variables:
 | Variable             | Meaning                                            | Default                          |
 |----------------------|----------------------------------------------------|----------------------------------|
 | `CC_RUNTIME_DIR`     | runtime state directory                            | `./.run`                         |
-| `CC_ADVERTISE_HOST`  | host agents/browsers use                           | `localhost`                      |
+| `CC_ADVERTISE_HOST`  | host used to build the default `PUBLIC_BASE_URL`   | `localhost`                      |
+| `CC_PUBLIC_BASE_URL` | external base URL written to `.env` (overrides the host-derived default) | `http://<advertise>:<api port>` |
 | `CC_WEB_PORT`        | web UI port                                        | first free at/after `3000`       |
 | `CC_API_PORT`        | REST API port                                      | first free at/after `8080`       |
 | `CC_GRPC_PORT`       | agent gRPC port                                    | first free at/after `9090`       |

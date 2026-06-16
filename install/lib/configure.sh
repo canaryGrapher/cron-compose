@@ -14,13 +14,17 @@ configure_runtime() {
 
 configure_ports() {
   step "Choose ports (a free one is suggested for each)"
+  # Thread the ports chosen so far so no two services are offered (or accept) the same
+  # one, even when a default is occupied by a leftover daemon from a previous install.
+  local taken=""
   if [ "${ENABLE_PROXY:-1}" = "1" ]; then
     info "With the single-entry proxy on, only the proxy port is public; web/API/gRPC are internal."
-    PROXY_PORT="$(prompt_port "Public proxy port (the one URL agents and browsers use)" "${CC_PROXY_PORT:-8000}")"
+    PROXY_PORT="$(prompt_port "Public proxy port (the one URL agents and browsers use)" "${CC_PROXY_PORT:-8000}" "$taken")"
+    taken="$taken $PROXY_PORT"
   fi
-  WEB_PORT="$(prompt_port "Web UI port (internal)" "${CC_WEB_PORT:-3000}")"
-  API_PORT="$(prompt_port "REST API port (internal)" "${CC_API_PORT:-8080}")"
-  GRPC_PORT="$(prompt_port "Agent gRPC port (internal)" "${CC_GRPC_PORT:-9090}")"
+  WEB_PORT="$(prompt_port "Web UI port (internal)" "${CC_WEB_PORT:-3000}" "$taken")";  taken="$taken $WEB_PORT"
+  API_PORT="$(prompt_port "REST API port (internal)" "${CC_API_PORT:-8080}" "$taken")"; taken="$taken $API_PORT"
+  GRPC_PORT="$(prompt_port "Agent gRPC port (internal)" "${CC_GRPC_PORT:-9090}" "$taken")"; taken="$taken $GRPC_PORT"
   if [ "${ENABLE_PROXY:-1}" = "1" ]; then
     ok "proxy=$PROXY_PORT  web=$WEB_PORT  api=$API_PORT  grpc=$GRPC_PORT"
   else

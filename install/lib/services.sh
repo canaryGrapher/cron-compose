@@ -198,6 +198,16 @@ print_summary() {
   dim "and replace the self-signed CA under $RUNTIME_DIR/tls with your own PKI."
 }
 
+# Best-effort: stop a stack left running by a previous install BEFORE we probe for free
+# ports, so its daemons don't (a) get orphaned when new pidfiles overwrite the old ones,
+# or (b) push port auto-selection onto higher, colliding numbers. Safe on a first install
+# (no control script yet).
+stop_existing_stack() {
+  [ -x "$REPO_ROOT/croncompose-ctl.sh" ] || return 0
+  step "Stopping any previously-installed stack"
+  "$REPO_ROOT/croncompose-ctl.sh" stop >&2 2>/dev/null || true
+}
+
 run_services() {
   write_ctl_script
   start_stack

@@ -78,6 +78,7 @@ ART
 main() {
   banner
   run_preflight
+  stop_existing_stack  # free a prior install's ports before we probe (avoids collisions)
   run_configure        # sets ports, secrets, DATABASE_URL, writes .env
   provision_database   # create/start the DB (no-op for an existing DSN)
   run_build            # go binaries + web

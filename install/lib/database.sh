@@ -161,25 +161,47 @@ provision_db_docker() {
 provision_db_psql() {
   step "Creating database role and schema owner via psql"
   local super_url="postgres://$DB_SUPERUSER@$DB_HOST:$DB_PORT/postgres?sslmode=disable"
+
+  # Hold the superuser password in memory (PGPASSWORD) for the whole session so the
+  # individual psql commands below never re-prompt. Seed it from the configure step;
+  # every psql call uses -w (never prompt) and relies on this instead.
   [ -n "${DB_SUPER_PASS:-}" ] && export PGPASSWORD="$DB_SUPER_PASS"
 
-  if ! psql "$super_url" -tAc "select 1" >/dev/null 2>&1; then
-    unset PGPASSWORD
-    die "could not connect as superuser '$DB_SUPERUSER' to $DB_HOST:$DB_PORT. Create the database manually and re-run choosing 'existing'."
+  # Probe connectivity without prompting. If the server wants a password we don't have
+  # yet (left blank at configure, but the server isn't trust/peer), ask once here and
+  # reuse it for every command that follows.
+  if ! psql -w "$super_url" -tAc "select 1" >/dev/null 2>&1; then
+    if [ "${NONINTERACTIVE:-0}" != "1" ]; then
+      local tries=0 supw=""
+      while [ "$tries" -lt 3 ]; do
+        printf '%sPassword for superuser %s%s: ' "$C_BOLD" "$DB_SUPERUSER" "$C_RESET" >/dev/tty
+        IFS= read -rs supw </dev/tty || supw=""
+        printf '\n' >/dev/tty
+        export PGPASSWORD="$supw"
+        if psql -w "$super_url" -tAc "select 1" >/dev/null 2>&1; then break; fi
+        warn "could not connect as '$DB_SUPERUSER'; check the password and try again"
+        tries=$((tries + 1))
+      done
+    fi
+    if ! psql -w "$super_url" -tAc "select 1" >/dev/null 2>&1; then
+      unset PGPASSWORD
+      die "could not connect as superuser '$DB_SUPERUSER' to $DB_HOST:$DB_PORT. Create the database manually and re-run choosing 'existing'."
+    fi
   fi
+  ok "connected as superuser $DB_SUPERUSER"
 
   # Role: create if missing, then ensure the password matches.
-  if [ "$(psql "$super_url" -tAc "select 1 from pg_roles where rolname='$DB_USER'")" != "1" ]; then
-    psql "$super_url" -v ON_ERROR_STOP=1 -c "create role \"$DB_USER\" login password '$DB_PASS'" >/dev/null \
+  if [ "$(psql -w "$super_url" -tAc "select 1 from pg_roles where rolname='$DB_USER'")" != "1" ]; then
+    psql -w "$super_url" -v ON_ERROR_STOP=1 -c "create role \"$DB_USER\" login password '$DB_PASS'" >/dev/null \
       && ok "created role $DB_USER" || die "failed to create role $DB_USER"
   else
-    psql "$super_url" -c "alter role \"$DB_USER\" login password '$DB_PASS'" >/dev/null 2>&1
+    psql -w "$super_url" -c "alter role \"$DB_USER\" login password '$DB_PASS'" >/dev/null 2>&1
     ok "role $DB_USER already existed (password updated)"
   fi
 
   # Database: create if missing, owned by the role.
-  if [ "$(psql "$super_url" -tAc "select 1 from pg_database where datname='$DB_NAME'")" != "1" ]; then
-    psql "$super_url" -v ON_ERROR_STOP=1 -c "create database \"$DB_NAME\" owner \"$DB_USER\"" >/dev/null \
+  if [ "$(psql -w "$super_url" -tAc "select 1 from pg_database where datname='$DB_NAME'")" != "1" ]; then
+    psql -w "$super_url" -v ON_ERROR_STOP=1 -c "create database \"$DB_NAME\" owner \"$DB_USER\"" >/dev/null \
       && ok "created database $DB_NAME" || die "failed to create database $DB_NAME"
   else
     ok "database $DB_NAME already existed"

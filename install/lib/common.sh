@@ -69,26 +69,39 @@ port_in_use() { # <port> -> 0 if a listener is bound
   return 1
 }
 
-find_free_port() { # <start> -> first free port at/after start
+# Membership test: is <port> a word in the space-separated <list>? Used to keep already
+# chosen ports out of later suggestions, so two services never share a port even when
+# their defaults are occupied (e.g. by a leftover daemon from a previous install). The
+# list is threaded through arguments because each prompt runs in a command-substitution
+# subshell and cannot mutate a parent global.
+_in_list() { case " ${2:-} " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
+
+find_free_port() { # <start> [reserved-list] -> first free, unreserved port at/after start
   local p="$1" n=0
-  while port_in_use "$p" && [ "$n" -lt 500 ]; do p=$((p + 1)); n=$((n + 1)); done
+  while { port_in_use "$p" || _in_list "$p" "${2:-}"; } && [ "$n" -lt 500 ]; do p=$((p + 1)); n=$((n + 1)); done
   printf '%s' "$p"
 }
 
 is_valid_port() { case "$1" in ''|*[!0-9]*) return 1 ;; *) [ "$1" -ge 1 ] && [ "$1" -le 65535 ] ;; esac; }
 
-# Prompt for a port, defaulting to the first free port at/after <default>. Warns (but
-# allows) if the chosen port is occupied; reprompts on invalid input.
-prompt_port() { # <label> <default-start>
-  local label="$1" start="$2" suggest chosen
-  suggest="$(find_free_port "$start")"
+# Prompt for a port, defaulting to the first free, unreserved port at/after <default>.
+# <reserved-list> (optional, space-separated) holds ports already given to other services
+# this run; the prompt rejects a manual entry that duplicates one. Warns (but allows) if
+# the chosen port is merely occupied; reprompts on invalid input.
+prompt_port() { # <label> <default-start> [reserved-list]
+  local label="$1" start="$2" reserved="${3:-}" suggest chosen
+  suggest="$(find_free_port "$start" "$reserved")"
   while :; do
     chosen="$(prompt "$label" "$suggest")"
     if ! is_valid_port "$chosen"; then warn "not a valid port: $chosen"; [ "${NONINTERACTIVE:-0}" = "1" ] && return 1; continue; fi
+    if _in_list "$chosen" "$reserved"; then
+      warn "port $chosen is already assigned to another CronCompose service"
+      suggest="$(find_free_port "$chosen" "$reserved")"
+      [ "${NONINTERACTIVE:-0}" = "1" ] && chosen="$suggest" || continue
+    fi
     if port_in_use "$chosen"; then
       warn "port $chosen is already in use"
-      [ "${NONINTERACTIVE:-0}" = "1" ] && { printf '%s' "$chosen"; return; }
-      confirm "  Use it anyway?" n || continue
+      if [ "${NONINTERACTIVE:-0}" != "1" ]; then confirm "  Use it anyway?" n || continue; fi
     fi
     printf '%s' "$chosen"; return
   done

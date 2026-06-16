@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { RunNowResult } from "@/lib/types";
+import { IconPlay } from "@/components/icons";
 
 export function RunNowButton({ jobId }: { jobId: string }) {
   const router = useRouter();
@@ -23,9 +24,7 @@ export function RunNowButton({ jobId }: { jobId: string }) {
       }
       const data = (await res.json()) as RunNowResult;
       setLast(data.runs);
-      if (data.runs.length === 1) {
-        router.push(`/runs/${data.runs[0].run_id}`);
-      }
+      if (data.runs.length === 1) router.push(`/runs/${data.runs[0].run_id}`);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -36,19 +35,16 @@ export function RunNowButton({ jobId }: { jobId: string }) {
   return (
     <div style={{ textAlign: "right" }}>
       <button className="button" onClick={trigger} disabled={busy}>
-        {busy ? "Triggering..." : "Run now"}
+        <IconPlay /> {busy ? "Triggering…" : "Run now"}
       </button>
-      {error && (
-        <p style={{ color: "var(--danger)", fontSize: 12, marginTop: 6 }}>{error}</p>
-      )}
+      {error && <p className="form-error" style={{ marginTop: 8 }}>{error}</p>}
       {last && last.length > 1 && (
-        <div style={{ marginTop: 8, textAlign: "left", fontSize: 12 }} className="subtle">
+        <div className="subtle" style={{ marginTop: 10, textAlign: "left", fontSize: 12 }}>
           {last.length} runs queued:
           <ul style={{ margin: "4px 0 0 16px" }}>
             {last.map((r) => (
               <li key={r.run_id}>
-                <Link href={`/runs/${r.run_id}`}>{r.run_id.slice(0, 8)}</Link>{" "}
-                ({r.server_id.slice(0, 8)}) — {r.status}
+                <Link href={`/runs/${r.run_id}`}>{r.run_id.slice(0, 8)}</Link> ({r.server_id.slice(0, 8)}) — {r.status}
               </li>
             ))}
           </ul>

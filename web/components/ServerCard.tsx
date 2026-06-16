@@ -1,36 +1,38 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import type { Server } from "@/lib/types";
+import { IconServer } from "./icons";
 
-const statusColor: Record<Server["status"], string> = {
-  pending: "var(--muted)",
-  online: "var(--ok)",
-  offline: "var(--danger)",
+const tone: Record<Server["status"], string> = {
+  online: "ok",
+  offline: "danger",
+  pending: "neutral",
 };
 
 export function ServerCard({ server }: { server: Server }) {
   return (
-    <Link
-      href={`/servers/${server.id}`}
-      className="panel"
-      style={{ display: "block", color: "var(--text)" }}
-    >
-      <div className="row">
-        <div>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{server.name}</div>
-          <div className="subtle" style={{ fontSize: 12, marginTop: 2 }}>
-            {server.os || "unknown"} / {server.arch || "unknown"}
+    <Link href={`/servers/${server.id}`} className="panel">
+      <div className="row" style={{ alignItems: "flex-start" }}>
+        <div className="cluster" style={{ flexWrap: "nowrap" }}>
+          <span className="mini-icon"><IconServer /></span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)" }}>{server.name}</div>
+            <div className="subtle" style={{ fontSize: 12 }}>
+              {server.os || "unknown"} / {server.arch || "unknown"}
+            </div>
           </div>
         </div>
-        <span className="status" style={{ "--status-color": statusColor[server.status] } as CSSProperties}>
-          {server.status}
-        </span>
+        <span className={`status ${tone[server.status]}`}>{server.status}</span>
       </div>
       {server.description && (
-        <p className="subtle" style={{ marginTop: 10 }}>
-          {server.description}
-        </p>
+        <p className="subtle" style={{ margin: "12px 0 0", fontSize: 13 }}>{server.description}</p>
       )}
+      <div className="faint" style={{ fontSize: 12, marginTop: 12 }}>
+        {Object.keys(server.labels || {}).length > 0
+          ? Object.entries(server.labels).map(([k, v]) => `${k}=${v}`).join(" · ")
+          : server.agent_version
+            ? `agent ${server.agent_version}`
+            : "no labels"}
+      </div>
     </Link>
   );
 }

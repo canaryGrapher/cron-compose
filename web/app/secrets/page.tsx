@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ListResponse, Secret } from "@/lib/types";
+import { IconKey } from "@/components/icons";
 
 export default function SecretsPage() {
   const [items, setItems] = useState<Secret[]>([]);
@@ -20,9 +21,7 @@ export default function SecretsPage() {
       setError((e as Error).message);
     }
   }
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -32,17 +31,10 @@ export default function SecretsPage() {
       const res = await fetch("/api/secrets", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name,
-          value,
-          scope,
-          scope_id: scopeID || undefined,
-        }),
+        body: JSON.stringify({ name, value, scope, scope_id: scopeID || undefined }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setName("");
-      setValue("");
-      setScopeID("");
+      setName(""); setValue(""); setScopeID("");
       await load();
     } catch (e) {
       setError((e as Error).message);
@@ -59,77 +51,68 @@ export default function SecretsPage() {
 
   return (
     <>
-      <h1>Secrets</h1>
-      <p className="subtle">
-        Values are write-only. Reference a secret by name in a job's <code>secret_refs</code>;
-        the agent receives it as an environment variable at run time.
-      </p>
+      <div className="page-head">
+        <div>
+          <h1>Secrets</h1>
+          <p className="subtle">
+            Values are write-only. Reference a secret by name in a job&apos;s <code>secret_refs</code>; the agent
+            receives it as an environment variable at run time.
+          </p>
+        </div>
+      </div>
 
-      <h2>Add a secret</h2>
-      <form onSubmit={create} className="stack" style={{ maxWidth: 540 }}>
-        <div className="row" style={{ gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label>Name (env var)</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="API_KEY" required />
+      <div className="panel" style={{ maxWidth: 560 }}>
+        <div className="card-head"><div className="card-title">Add a secret</div></div>
+        <form onSubmit={create}>
+          <div className="grid-2">
+            <div className="field">
+              <label>Name (env var)</label>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="API_KEY" required />
+            </div>
+            <div className="field">
+              <label>Scope</label>
+              <select value={scope} onChange={(e) => setScope(e.target.value as typeof scope)}>
+                <option value="global">global</option>
+                <option value="server">server</option>
+                <option value="job">job</option>
+              </select>
+            </div>
           </div>
-          <div style={{ flex: 1 }}>
-            <label>Scope</label>
-            <select
-              value={scope}
-              onChange={(e) => setScope(e.target.value as typeof scope)}
-              style={{
-                width: "100%",
-                background: "var(--bg)",
-                color: "var(--text)",
-                border: "1px solid var(--border)",
-                borderRadius: 6,
-                padding: "8px 10px",
-              }}
-            >
-              <option value="global">global</option>
-              <option value="server">server</option>
-              <option value="job">job</option>
-            </select>
+          {scope !== "global" && (
+            <div className="field">
+              <label>Scope ID ({scope})</label>
+              <input value={scopeID} onChange={(e) => setScopeID(e.target.value)} placeholder={`${scope}_id`} required />
+            </div>
+          )}
+          <div className="field">
+            <label>Value</label>
+            <input type="password" value={value} onChange={(e) => setValue(e.target.value)} required />
           </div>
-        </div>
-        {scope !== "global" && (
-          <div>
-            <label>Scope ID ({scope})</label>
-            <input value={scopeID} onChange={(e) => setScopeID(e.target.value)} placeholder={`${scope}_id`} required />
-          </div>
-        )}
-        <div>
-          <label>Value</label>
-          <input type="password" value={value} onChange={(e) => setValue(e.target.value)} required />
-        </div>
-        {error && <p style={{ color: "var(--danger)" }}>{error}</p>}
-        <div>
+          {error && <div className="form-error" style={{ marginBottom: 14 }}>{error}</div>}
           <button type="submit" className="button" disabled={busy || !name || !value}>
-            {busy ? "Adding..." : "Add secret"}
+            {busy ? "Adding…" : "Add secret"}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
 
       <h2>Existing secrets</h2>
       {items.length === 0 ? (
-        <div className="panel">
-          <p className="subtle">No secrets yet.</p>
-        </div>
+        <div className="panel"><div className="empty">No secrets yet.</div></div>
       ) : (
         <div className="stack">
           {items.map((s) => (
             <div key={s.id} className="panel">
               <div className="row">
-                <div>
-                  <div style={{ fontWeight: 600 }}>{s.name}</div>
-                  <div className="subtle" style={{ fontSize: 12 }}>
-                    scope: {s.scope}
-                    {s.scope_id ? ` (${s.scope_id.slice(0, 8)})` : ""} · created {new Date(s.created_at).toLocaleString()}
+                <div className="cluster" style={{ flexWrap: "nowrap" }}>
+                  <span className="mini-icon"><IconKey /></span>
+                  <div>
+                    <div style={{ fontWeight: 700, color: "var(--text)" }}>{s.name}</div>
+                    <div className="subtle" style={{ fontSize: 12 }}>
+                      scope: {s.scope}{s.scope_id ? ` (${s.scope_id.slice(0, 8)})` : ""} · created {new Date(s.created_at).toLocaleString()}
+                    </div>
                   </div>
                 </div>
-                <button className="button secondary" onClick={() => remove(s.id)}>
-                  Delete
-                </button>
+                <button className="button danger sm" onClick={() => remove(s.id)}>Delete</button>
               </div>
             </div>
           ))}

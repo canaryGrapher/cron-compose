@@ -1,6 +1,10 @@
 import "./globals.css";
+import "./components.css";
+import "./layout.css";
+import "./dashboard.css";
+import "./wizard.css";
 import type { Metadata } from "next";
-import { Nav } from "@/components/Nav";
+import { Shell } from "@/components/Shell";
 
 export const metadata: Metadata = {
   title: "CronCompose",
@@ -11,10 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <main>
-          <Nav />
-          {children}
-        </main>
+        <Shell>{children}</Shell>
       </body>
     </html>
   );

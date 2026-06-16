@@ -1,15 +1,15 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
 import type { Run } from "@/lib/types";
+import { IconPlay } from "./icons";
 
-const statusColor: Record<Run["status"], string> = {
-  pending: "var(--muted)",
-  running: "var(--info)",
-  succeeded: "var(--ok)",
-  failed: "var(--danger)",
-  timed_out: "var(--danger)",
-  canceled: "var(--muted)",
-  skipped: "var(--muted)",
+const tone: Record<Run["status"], string> = {
+  pending: "neutral",
+  running: "info",
+  succeeded: "ok",
+  failed: "danger",
+  timed_out: "danger",
+  canceled: "neutral",
+  skipped: "neutral",
 };
 
 function fmtDuration(ms?: number) {
@@ -21,21 +21,22 @@ function fmtDuration(ms?: number) {
 
 export function RunRow({ run }: { run: Run }) {
   return (
-    <Link href={`/runs/${run.id}`} className="panel" style={{ display: "block", color: "var(--text)" }}>
-      <div className="row">
-        <div>
-          <div style={{ fontSize: 12 }} className="subtle">
-            {new Date(run.created_at).toLocaleString()}
-          </div>
-          <div style={{ fontSize: 12, marginTop: 2 }}>
-            trigger: {run.trigger}
-            {run.duration_ms !== undefined && <> · {fmtDuration(run.duration_ms)}</>}
-            {run.exit_code !== undefined && <> · exit {run.exit_code}</>}
+    <Link href={`/runs/${run.id}`} className="panel">
+      <div className="row" style={{ alignItems: "flex-start" }}>
+        <div className="cluster" style={{ flexWrap: "nowrap" }}>
+          <span className="mini-icon"><IconPlay /></span>
+          <div>
+            <div style={{ fontWeight: 600, color: "var(--text)", fontSize: 13 }}>
+              {new Date(run.created_at).toLocaleString()}
+            </div>
+            <div className="subtle" style={{ fontSize: 12 }}>
+              {run.trigger}
+              {run.duration_ms !== undefined && <> · {fmtDuration(run.duration_ms)}</>}
+              {run.exit_code !== undefined && <> · exit {run.exit_code}</>}
+            </div>
           </div>
         </div>
-        <span className="status" style={{ "--status-color": statusColor[run.status] } as CSSProperties}>
-          {run.status}
-        </span>
+        <span className={`status ${tone[run.status]}`}>{run.status}</span>
       </div>
     </Link>
   );

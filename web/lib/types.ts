@@ -1,6 +1,8 @@
 // Shared types mirroring the control-plane API responses. Keep these intentionally
 // small; expand as new endpoints are wired in.
 
+export type Me = { id: string; email: string; name: string; role: string };
+
 export type Server = {
   id: string;
   name: string;
@@ -89,5 +91,14 @@ export type Secret = {
   scope: "global" | "server" | "job";
   scope_id?: string;
   name: string;
+  created_at: string;
+};
+
+export type NotificationTarget = {
+  id: string;
+  name: string;
+  kind: string;
+  url: string;
+  enabled: boolean;
   created_at: string;
 };

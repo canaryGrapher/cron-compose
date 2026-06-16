@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { IconZap } from "@/components/icons";
 
 type AuthConfig = {
   password_login: boolean;
@@ -60,11 +61,10 @@ function LoginForm() {
   }
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <div className="brand" style={{ fontSize: 18 }}>
-          <span className="mark">C</span>
-          CronCompose
+    <div className="auth-card">
+        <div className="brand">
+          <span className="mark"><IconZap /></span>
+          <span>CronCompose</span>
         </div>
         <h1 style={{ marginTop: 18 }}>Sign in</h1>
         <p className="subtle" style={{ margin: "0 0 4px" }}>
@@ -110,7 +110,6 @@ function LoginForm() {
             {busy ? "Signing in…" : "Sign in"}
           </button>
         </form>
-      </div>
     </div>
   );
 }

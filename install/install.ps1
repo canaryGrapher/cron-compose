@@ -260,6 +260,8 @@ function Invoke-Migrate {
 
 function Invoke-Build {
   Write-Step "Building Go binaries"
+  # Use only the locally installed Go; never download a different Go toolchain.
+  $env:GOTOOLCHAIN = 'local'
   Push-Location "$RepoRoot\control-plane"
   try {
     go build -o bin/control-plane.exe ./cmd/server; if ($LASTEXITCODE) { Die "control-plane build failed" }; Write-Ok "control-plane"

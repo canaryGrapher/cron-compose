@@ -4,6 +4,9 @@
 
 build_go() {
   step "Building Go binaries"
+  # Use only the locally installed Go; never let `go build` download a different Go
+  # toolchain onto the system (preflight already verified the local version is new enough).
+  export GOTOOLCHAIN=local
   ( cd "$REPO_ROOT/control-plane" && go build -o bin/control-plane ./cmd/server ) || die "control-plane build failed"
   ok "control-plane"
   ( cd "$REPO_ROOT/control-plane" && go build -o bin/migrate ./cmd/migrate ) || die "migrate tool build failed"
